@@ -5,6 +5,7 @@
 #include <map>
 
 const std::string fileName = "test2.xml";
+const char spaceChar = ' ';
 
 std::string getStrBetweenTwoStr(const std::string& s, const std::string& start_delim, const std::string& stop_delim)
 {
@@ -15,12 +16,19 @@ std::string getStrBetweenTwoStr(const std::string& s, const std::string& start_d
 	return s.substr(end_pos_of_first_delim, last_delim_pos - end_pos_of_first_delim);
 }
 
+
+std::string createFileName(std::string name)
+{
+	std::string s = getStrBetweenTwoStr(name, "", ".xml");
+	return s + "_result.xml";
+}
+
 void writeToResultFile(std::vector<std::string> &idStrings, std::vector<int> &values)
 {
 
 	if (idStrings.size() != values.size())
 	{
-		std::cout << "ERROR - idStrings size not equal to values size." << "( " << idStrings.size() << ", " << values.size() << " )";
+		std::cout << "ERROR - idStrings size not equal to values size." << "( " << idStrings.size() << ", " << values.size() << " )" << std::endl;
 		for (auto v : values)
 		{
 			std::cout << v << ", ";
@@ -29,13 +37,13 @@ void writeToResultFile(std::vector<std::string> &idStrings, std::vector<int> &va
 	}
 
 	std::ofstream resultsFile;
-	resultsFile.open("results.xml", std::ofstream::out | std::ofstream::trunc); // TODO: set name
+	resultsFile.open(createFileName(fileName), std::ofstream::out | std::ofstream::trunc);
 
 	resultsFile << "<expressions>";
 	resultsFile << '\n';
 	for (auto i = 0; i < idStrings.size(); i++)
 	{
-		resultsFile << "	<result id" << idStrings[i] << values[i] << "</result>";
+		resultsFile << "	<result id=\"" << idStrings[i] << "\">" << values[i] << "</result>";
 		resultsFile << '\n';
 	}
 	resultsFile << "</expressions>";
@@ -75,7 +83,6 @@ void calculateValue(std::vector<int>& tmp, std::vector<int> & final, std::string
 	{
 		std::cout << "ERROR: Unknow currentOperation type";
 	}
-	tmp.clear();
 }
 
 int main()
@@ -86,10 +93,12 @@ int main()
 
 	std::vector<std::string> idStrings;
 	std::vector<int> values;
-	std::vector<int> tmpValues;
+	std::vector<std::vector<int>> tmpValues;
 
-	std::string currentOperation = "";
+	std::vector<std::string> currentOperation;
 
+	bool isComplex = false;
+	std::cout << "BEGIN" << std::endl;
 	if (inputFile)
 	{
 		std::string line;
@@ -97,27 +106,53 @@ int main()
 		{
 			if (line.find(" id") != std::string::npos) 
 			{
-				std::string c = line.substr(line.find('='));
+				std::string c = getStrBetweenTwoStr(line, "id=\"", "\" ");
+				c = getStrBetweenTwoStr(c, "", "\"");
 				idStrings.push_back(c);
-				currentOperation = getStrBetweenTwoStr(line, "<", " id");
-				std::cout << "CURRENT OPERATION: " << currentOperation << std::endl;
+				std::cout << c << std::endl;
+				currentOperation.push_back(getStrBetweenTwoStr(line, "<", " id"));
+				std::cout << std::string(currentOperation.size() * 6, spaceChar) << "CURRENT OPERATION: " << currentOperation.back() << std::endl;
 				continue;
 			}
-			if (line.find("</" + currentOperation + ">") != std::string::npos)
+
+			if (line.find("<addition>") != std::string::npos || line.find("<multiplication>") != std::string::npos || 
+				line.find("<division>") != std::string::npos || line.find("<subtraction>") != std::string::npos)
 			{
-				std::cout << "END OF OPERATION: " << currentOperation << std::endl;
-				calculateValue(tmpValues, values, currentOperation);
-				currentOperation = "";
+				currentOperation.push_back(getStrBetweenTwoStr(line, "<", ">"));
+				std::cout << std::string(currentOperation.size() * 6, spaceChar) << "CURRENT NESTED OPERATION: " << currentOperation.back() << std::endl;
+				continue;
 			}
-			if (currentOperation != "")
+
+			if (currentOperation.size() > 0 && line.find("</" + currentOperation.back() + ">") != std::string::npos)
+			{
+				std::cout << std::string(currentOperation.size() * 6, spaceChar) << "END OF OPERATION: " << currentOperation.back() << std::endl;
+				if(tmpValues.size() > 1)
+					calculateValue(tmpValues[currentOperation.size() - 1], tmpValues[currentOperation.size() - 2], currentOperation.back());
+				else
+					calculateValue(tmpValues[currentOperation.size() - 1], values, currentOperation.back());
+				currentOperation.pop_back();
+				tmpValues.pop_back();
+				continue;
+			}
+
+			if (currentOperation.size() > 0)
 			{
 				std::string c = getStrBetweenTwoStr(line, ">", "</");
-				std::cout << "FOUND VALUE: " << c << std::endl;
-				tmpValues.push_back(std::stoi(c));
+				if (c != "")
+				{
+					std::cout << std::string((currentOperation.size() + 1) * 6, spaceChar) << "FOUND VALUE: " << c << std::endl;
+					if (tmpValues.size() < currentOperation.size())
+					{
+						while(tmpValues.size() < currentOperation.size())
+							tmpValues.push_back(std::vector<int>());
+					}
+					tmpValues[currentOperation.size() - 1].push_back(std::stol(c));
+				}	
 			}
 		}
 	}
 	writeToResultFile(idStrings, values);
 	inputFile.close();
+	std::cout << "END" << std::endl;
 	return 0;
 }

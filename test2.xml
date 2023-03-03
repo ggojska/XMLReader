@@ -22,12 +22,6 @@
 		<factor>
 			<addition>
 				<item>2</item>
-				<item>
-					<subtraction>
-						<minuend>7</minuend>
-						<subtrahend>3</subtrahend>
-					</subtraction>
-				</item>
 				<item>3</item>
 				<item>4</item>
 			</addition>

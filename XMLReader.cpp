@@ -39,7 +39,7 @@ void XMLReader::writeToResultFile()
 
 	if (this->idStrings.size() != this->values.size())
 	{
-		if(this->debugMode) std::cout << "ERROR - idStrings size not equal to values size." << "( " << this->idStrings.size() << " != " << this->values.size() << " )" << std::endl;
+		std::cout << "ERROR - idStrings size not equal to values size." << "( " << this->idStrings.size() << " != " << this->values.size() << " )" << std::endl;
 		for (auto v : this->values)
 		{
 			if(this->debugMode) std::cout << v << ", ";
@@ -92,42 +92,13 @@ void XMLReader::calculateValue(std::vector<int>& tmp, std::vector<int>& final, s
 	}
 	else
 	{
-		if(this->debugMode) std::cout << "ERROR: Unknow currentOperation type";
+		std::cout << "ERROR: Unknow currentOperation type";
 	}
 }
 
 void XMLReader::calculateValue(std::vector<int>& tmp, std::string currentOperation)
 {
-	if (currentOperation == "addition")
-	{
-		int tmpVal = 0;
-		for (auto a : tmp)
-		{
-			tmpVal += a;
-		}
-		this->values.push_back(tmpVal);
-	}
-	else if (currentOperation == "multiplication")
-	{
-		int tmpVal = 1;
-		for (auto m : tmp)
-		{
-			tmpVal *= m;
-		}
-		this->values.push_back(tmpVal);
-	}
-	else if (currentOperation == "division")
-	{
-		this->values.push_back(tmp[0] / tmp[1]);
-	}
-	else if (currentOperation == "subtraction")
-	{
-		this->values.push_back(tmp[0] - tmp[1]);
-	}
-	else
-	{
-		if(this->debugMode) std::cout << "ERROR: Unknow currentOperation type";
-	}
+	this->calculateValue(tmp, this->values, currentOperation);
 }
 
 void XMLReader::parseXML()
